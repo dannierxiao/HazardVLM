@@ -64,7 +64,7 @@ Place them in `src/models` directory.
 We release our the datasets for download at:
 [https://drive.google.com/drive/folders/1ypCRsIH9prbcRH8CBhGi4hhVE5dQNWV4?usp=drive_link]
 
-Place them in `src/datasets` directory.
+Create a `src/datasets` directory and place datasets in there.
 
 __DoTA-HEC BASE DATASET:__
 - `VLM_DOTA_BASE_DATA_HCLASS_T10_65_7901.json`
