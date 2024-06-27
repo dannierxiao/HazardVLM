@@ -1,0 +1,68 @@
+# w & b
+project_name: "CHPT3 VLM"
+
+notes: "Run"
+GLOBAL_SEED: 1
+
+repeat_run_id: 'A' # For multi run model save and comparison
+restart_training: False
+
+# Training
+mixed_precision: True
+lr: 0.001
+loss_weight_decay: 0.001 # L2 reg, higher better to stop overfitting
+plateau_lr_patience: 10 
+step_lr_multiplier: 0.5
+optimizer: "sgd" #adamW, sgd
+early_stop_patience: 20 # Patience before early stoppping
+loss_func: 'cross_entropy' # 'focal', 'cross_entropy'
+
+# Transfer learning 
+model_load_path: 'DOTA_64849_A.pt' # Do not include file extension
+
+# Tokenizer
+tokenizer: 'tokenizer_dota_151_v3' # Must match original tokenizer for training
+tokenizer_vocab_size: 151 # 30 Unique words + ~3x allowance for for all unique words, common subwords, and special tokens.
+max_tok_per_caption: 10
+padding_token_idx: 0
+start_token_idx: 1
+end_token_idx: 2
+
+# Dataset
+dataset: 'DOTA' # Used for model naming
+show_haz_actor_bbox: False # Whether to show the hazardous actor bounding box in the video
+image_channels: 3 # Number of channels in the video frames.
+grayscale: False # Whether to convert the video to grayscale
+test_split: 0.3
+upsample_mode: null # 'full': entire string counts as class, 'partial': first three words, False: no upsample
+hazard_metrics: False # Whether to break caption into separate components and score each separately
+binary_hazard_metrics: False # If dataset includes safe class or not
+
+batch_size: 4
+batch_multiplier: 1 # Pseudo batch through accumulation, final batch size = batch * multiplier
+input_filename: 'VLM_DOTA_HCLASS_T10_65_7901'
+epochs: 100
+
+# Model
+model: 'vlm'
+adaptive_frame_sample: False # Whether to use adaptive sampling
+adaptive_frame_sample_ratio: 1 # Rate of frames to sample
+adaptive_frame_sample_mode: 'highest_value' # 'uniform', 'highest_value'
+
+teacher_forcing_pattern: 'stochastic' # 'stochastic', 'deterministic'
+teacher_forcing_decay_epoch: 0 # Decay after this epoch, phase 1
+teacher_forcing_decay: 0.03 # Decay per epoch. @0.02 it will take 50 epochs to remove all teacher forcing
+
+encoder: 'x3d_m' # Options: x3d_l, x3d_m, 'pre_extracted'
+
+visual_mlp: True # True, False
+visual_mlp_hidden_layers: [2048] # Hidden layer sizes. Default: [2048]
+visual_mlp_dropout: 0.75 # Default 0.75
+visual_mlp_output_dim: 1200 # Must be divisble by num heads. 
+
+decoder_hidden_size: 2048 # Hidden dimension size
+decoder_layers: 12 # Number layers.
+decoder_heads: 12 # Number of attention heads. Default 12
+decoder_dropout: 0.75 # Dropout rate.
+
+model_visualiser_mode: True

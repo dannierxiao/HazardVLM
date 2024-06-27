@@ -1,0 +1,9 @@
+# MODEL CONFIG
+cudnn_deterministic: True # true will have reproducible but slow training
+proc_mode: 1 # {1: train and eval, 2: eval on pre-trained model, 3: transfer learning on pre-trained model}
+target_gpu: 'cuda:0' # set gpu to use in multi-gpu setup 'cuda:0', 'cuda:1'
+
+run_name: 'HazardVLM'
+single_run_bool: 1 # {0: sweep, 1: single run}
+wandb_bool: 1 # {0: wandb logging* off, 1: wandb logging* on} *wandb account needed to log and view evaluation results on cloud
+wandb_account_name: 'robocar' # wandb account name
