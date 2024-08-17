@@ -88,42 +88,32 @@ def model_init(model_config=None): # none by default if left empty
     with wandb.init(project=project_name, entity=WANDB_ACC, config=model_config, mode=WANDB_MODE, name=RUN_NAME):
         model_config = wandb.config # this config will be set by Sweep Controller
 
-        if INIT_CONFIG['mode'] == 'vlm':
-            # Init tokenizer
-
-            if model_config['tokenizer'] == 'gpt2':
-                tokenizer = AutoTokenizer.from_pretrained("gpt2")
-                tokenizer.pad_token_id = 0
-                tokenizer.bos_token_id = 1
-                tokenizer.eos_token_id = 2
-                tokenizer.mask_token_id = 3
-                tokenizer.unk_token_id = 4
-            else:
-                tokenizer = PreTrainedTokenizerFast(
-                                            tokenizer_file='config/tokenizer/{}.json'.format(model_config['tokenizer']),
-                                            pad_token='[PAD]',
-                                            sos_token='[SOS]',
-                                            eos_token='[EOS]',
-                                            sep_token='[SEP]',
-                                            cls_token='[CLS]',
-                                            mask_token='[MASK]',
-                                            unk_token='[UNK]',
-                                            )
-        
-            # check tokenizer vocab size
-            if tokenizer.vocab_size != model_config['tokenizer_vocab_size']:
-                raise ValueError('Tokenizer vocab size {} does not match config file {}'.format(tokenizer.vocab_size , model_config['tokenizer_vocab_size']))
-
-            model = HazardVLM(model_config, tokenizer)
-        elif INIT_CONFIG['mode'] == 'benchmark':
-            model = init_benchmark_model(model_config['model'])
-            tokenizer = None
+        # Init tokenizer
+        if model_config['tokenizer'] == 'gpt2':
+            tokenizer = AutoTokenizer.from_pretrained("gpt2")
+            tokenizer.pad_token_id = 0
+            tokenizer.bos_token_id = 1
+            tokenizer.eos_token_id = 2
+            tokenizer.mask_token_id = 3
+            tokenizer.unk_token_id = 4
         else:
-            raise ValueError('Invalid mode: {}'.format(INIT_CONFIG['mode']))
+            tokenizer = PreTrainedTokenizerFast(
+                                        tokenizer_file='config/tokenizer/{}.json'.format(model_config['tokenizer']),
+                                        pad_token='[PAD]',
+                                        sos_token='[SOS]',
+                                        eos_token='[EOS]',
+                                        sep_token='[SEP]',
+                                        cls_token='[CLS]',
+                                        mask_token='[MASK]',
+                                        unk_token='[UNK]',
+                                        )
+    
+        # Check tokenizer vocab size
+        if tokenizer.vocab_size != model_config['tokenizer_vocab_size']:
+            raise ValueError('Tokenizer vocab size {} does not match config file {}'.format(tokenizer.vocab_size , model_config['tokenizer_vocab_size']))
 
-        # if platform == 'linux' or platform == 'linux2':
-        #     logging.info(f'*** Torch compile {platform}')
-        #     model = torch.compile(model)
+        model = HazardVLM(model_config, tokenizer)
+        model = model.to(device)
         
         # Initialize the datasets
         train_dataset = CustomDataLoader(model_config, split='train')
@@ -137,6 +127,23 @@ def model_init(model_config=None): # none by default if left empty
         test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, collate_fn=test_dataset.collate_fn, drop_last=True)
         test_loader_frames_removed = DataLoader(test_dataset_frames_removed, batch_size=1, shuffle=False, collate_fn=test_dataset.collate_fn, drop_last=True)
 
+        # FLOPs calculation 
+        logging.info("FLOPs Calculation ---------------------")
+        logging.info('\n')
+        eval_scores = {}
+        eval_scores = calc_flops(model, test_loader, eval_scores)
+        macs = eval_scores['macs']
+        flops = eval_scores['flops']
+        logging.info('\n')
+
+        # Compile model
+        if INIT_CONFIG['compile']:
+            if platform == 'linux' or platform == 'linux2':
+                logging.info(f'*** Torch compile enabled ***')
+                model = torch.compile(model)
+            else:
+                logging.info(f'*** Torch compile not supported on {platform} at time of publication ***')
+
         # Evaluation or transfer learning on pretrained model
         if INIT_CONFIG['proc_mode'] in [2,3]:
             model_save_name = model_config['model_load_path']
@@ -144,7 +151,6 @@ def model_init(model_config=None): # none by default if left empty
             logging.info('Model load success')
             logging.info('\n')
 
-        model = model.to(device)
         model_params = count_parameters(model)
         logging.info('\n')
 
@@ -212,10 +218,9 @@ def model_init(model_config=None): # none by default if left empty
                                                 loss_func=loss_func
                                                 )
         logging.info('\n')
-        logging.info("FLOPs Calculation ---------------------")
-        logging.info('\n')
-        eval_scores = calc_flops(model, test_loader, eval_scores)
-        logging.info('\n')
+
+        eval_scores['macs'] = macs
+        eval_scores['flops'] = flops
         eval_scores['model_save_name'] = model_save_name
         eval_scores['model_params'] = model_params
 

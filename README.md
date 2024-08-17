@@ -158,6 +158,7 @@ run_name: '<INSERT DESIRED RUN NAME HERE>'
 single_run_bool: 1 # {0: sweep, 1: single run}
 wandb_bool: 1 #  {0: wandb logging* off, 1: wandb logging* on} *wandb account needed to log and view evaluation results
 wandb_account_name: '<INSERT WANDB ACCOUNT NAME HERE>' # *wandb account name
+compile: 1 # {0: no compile, 1: compile} # PyTorch JIT compile model for faster inference at deployment. Currently only supported on linux at time of publication
 
 
 ```

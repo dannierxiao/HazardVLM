@@ -1,13 +1,13 @@
 import cv2
 import numpy as np
+import os
+import random
 import math
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.colors import Normalize
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-import numpy as np
-import math
-import random
+from concurrent.futures import ThreadPoolExecutor
 
 def calculate_optical_flow_cuda(prev_frame, current_frame):
     """
@@ -258,3 +258,62 @@ def visualise_processed_frames(processed_frames):
     plt.tight_layout()
     plt.savefig(f'scene_frames_grid.png')
     plt.close()
+
+
+def process_chunk(chunk_start, chunk_size, frames):
+    max_flow_magnitude = -1
+    selected_frame_idx = None
+    prev_frame = None
+
+    for j in range(chunk_size):
+        frame_idx = chunk_start + j
+        if frame_idx >= len(frames):
+            break
+
+        current_frame = frames[frame_idx]
+
+        if prev_frame is not None:
+            flow_magnitude = calculate_optical_flow(prev_frame, current_frame)
+            if flow_magnitude > max_flow_magnitude:
+                max_flow_magnitude = flow_magnitude
+                selected_frame_idx = frame_idx
+
+        prev_frame = current_frame
+
+    return selected_frame_idx
+
+
+def get_sample_frames_threading(config, video_path):
+    num_threads = os.cpu_count()
+    
+    # Load video to frames
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return f"Error: Video path is not accessible or the video cannot be opened {video_path}."
+
+    frames = []
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        frames.append(frame)
+
+    cap.release()  # Release the VideoCapture object since we no longer need it
+
+    sampling_ratio = config['adaptive_frame_sample_ratio']
+    if sampling_ratio == 0:
+        raise ValueError("Sampling ratio must be > 0")
+
+    total_frames = len(frames)
+    num_samples = max(1, math.floor(total_frames * sampling_ratio))
+    chunk_size = max(1, total_frames // num_samples)
+
+    with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        futures = []
+        for i in range(0, total_frames, chunk_size):
+            futures.append(executor.submit(process_chunk, i, chunk_size, frames))
+        
+        sampled_frames = [f.result() for f in futures if f.result() is not None]
+
+    sampled_frames.sort()
+    return sampled_frames

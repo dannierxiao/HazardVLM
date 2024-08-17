@@ -1,6 +1,5 @@
-# w & b
+# W&B Init
 project_name: "CHPT3 VLM"
-
 notes: "Run"
 GLOBAL_SEED: 1
 
@@ -35,11 +34,6 @@ batch_size: 4
 batch_multiplier: 1 #  Pseudo batch through accumulation to run on GPUs with lower memory, final batch size = batch * multiplier
 epochs: 100
 
-# batch_size: 2 # Rapid prototype small dataset
-# batch_multiplier: 1 #  Pseudo batch through accumulation to run on GPUs with lower memory, final batch size = batch * multiplier
-# input_filename: 'VLM_DOTA_CLS0_1_TEST_DATASET_20'
-# epochs: 1
-
 # Tokenizer
 tokenizer: 'tokenizer_dota_A_153_v8'
 tokenizer_vocab_size: 153 # 30 Unique words + ~3x allowance for for all unique words, common subwords, and special tokens.
@@ -58,7 +52,8 @@ end_token_idx: 2
 model: 'vlm'
 adaptive_frame_sample: False # Whether to use adaptive sampling at runtime. Recommened to preprocess for faster training.
 adaptive_frame_sample_ratio: 0.5 # Rate of frames to sample
-adaptive_frame_sample_mode: 'highest_value' # 'uniform', 'highest_value', 'random'
+adaptive_frame_sample_mode: 'uniform' # 'uniform', 'highest_value', 'random'
+adaptive_frame_sample_threading: False # Whether to use threading for adaptive sampling. Implemented for best performing uniform mode.
 
 teacher_forcing_pattern: 'stochastic' # 'stochastic', 'deterministic'
 teacher_forcing_decay_epoch: 1 # Decay after this epoch, phase 1 # Default 1

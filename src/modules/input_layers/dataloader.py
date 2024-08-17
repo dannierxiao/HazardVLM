@@ -8,7 +8,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 from modules.training_loop.logging_funct import logging
 from modules.input_layers.data_tools import upsample_file_list, get_train_val_test_split
-from modules.input_layers.adaptive_sampling_tools import get_sample_frames
+from modules.input_layers.adaptive_sampling_tools import get_sample_frames, get_sample_frames_threading
 
 class HazardVideoDataset(Dataset):
     def __init__(self, config, split, end_frames_removed=0.0):
@@ -138,7 +138,10 @@ class HazardVideoDataset(Dataset):
         if sampling_ratio == 0:
             raise ValueError("Sampling ratio must be > 0")
 
-        sampled_frames = get_sample_frames(self.config, video_path, video_data)
+        if self.config['adaptive_frame_sample_mode'] and self.config['adaptive_frame_sample_threading']:
+            sampled_frames = get_sample_frames_threading(self.config, video_path)
+        else:
+            sampled_frames = get_sample_frames(self.config, video_path, video_data)
         
         # Reload the video to process and extract the sampled frames
         cap = cv2.VideoCapture(video_path)

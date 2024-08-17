@@ -121,13 +121,16 @@ sweep_config = {
             'adaptive_frame_sample': {
                 'values': [False] # True, False # Whether to use adaptive sampling at runtime. Recommened to preprocess for faster training.
             },
-
             'adaptive_frame_sample_ratio': {
                 'values': [0.5] # Rate of frame sampling.
             },
             'adaptive_frame_sample_mode': {
                 'values': ['highest_value'] # 'uniform', 'highest_value', 'random'
             },
+            'adaptive_frame_sample_threading': {
+                'values': [False] # True, False # Whether to use threading for adaptive sampling. Implemented for best performing uniform mode.
+            },
+
 
             'teacher_forcing_pattern': {
                 'values': ['stochastic'] # 'stochastic', 'deterministic'
